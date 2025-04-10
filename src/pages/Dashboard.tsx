@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { format } from 'date-fns';
 import { useApp } from '@/context/AppContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import StatusBadge from '@/components/status/StatusBadge';
 import {
   Users,
   UserCheck,
