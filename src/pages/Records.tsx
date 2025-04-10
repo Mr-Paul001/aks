@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { format } from 'date-fns';
 import { useApp } from '@/context/AppContext';
@@ -50,8 +51,8 @@ const Records = () => {
   } = useApp();
   
   const [search, setSearch] = useState('');
-  const [filterEmployee, setFilterEmployee] = useState('');
-  const [filterStatus, setFilterStatus] = useState('');
+  const [filterEmployee, setFilterEmployee] = useState('all');
+  const [filterStatus, setFilterStatus] = useState('all');
   
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -68,8 +69,8 @@ const Records = () => {
       record.status.includes(search.toLowerCase()) ||
       (record.notes && record.notes.toLowerCase().includes(search.toLowerCase()));
     
-    const matchEmployee = filterEmployee ? record.employeeId === filterEmployee : true;
-    const matchStatus = filterStatus ? record.status === filterStatus : true;
+    const matchEmployee = filterEmployee === 'all' ? true : record.employeeId === filterEmployee;
+    const matchStatus = filterStatus === 'all' ? true : record.status === filterStatus;
     
     return matchSearch && matchEmployee && matchStatus;
   });
@@ -130,7 +131,7 @@ const Records = () => {
             <SelectValue placeholder="Filter by employee" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">All Employees</SelectItem>
+            <SelectItem value="all">All Employees</SelectItem>
             {employees.map((employee) => (
               <SelectItem key={employee.id} value={employee.id}>
                 {employee.name}
@@ -147,7 +148,7 @@ const Records = () => {
             <SelectValue placeholder="Filter by status" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">All Statuses</SelectItem>
+            <SelectItem value="all">All Statuses</SelectItem>
             <SelectItem value="present">Present</SelectItem>
             <SelectItem value="absent">Absent</SelectItem>
             <SelectItem value="late">Late</SelectItem>
