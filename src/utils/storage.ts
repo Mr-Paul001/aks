@@ -1,8 +1,19 @@
 
-import { Employee, AttendanceRecord } from '@/types';
+import { Employee, AttendanceRecord, OrganizationSettings } from '@/types';
 
 const EMPLOYEES_KEY = 'attendance-app-employees';
 const ATTENDANCE_KEY = 'attendance-app-attendance';
+const ORG_SETTINGS_KEY = 'attendance-app-org-settings';
+
+// Organization settings storage operations
+export const getOrgSettings = (): OrganizationSettings | null => {
+  const data = localStorage.getItem(ORG_SETTINGS_KEY);
+  return data ? JSON.parse(data) : null;
+};
+
+export const saveOrgSettings = (settings: OrganizationSettings): void => {
+  localStorage.setItem(ORG_SETTINGS_KEY, JSON.stringify(settings));
+};
 
 // Employee storage operations
 export const getEmployees = (): Employee[] => {
@@ -97,10 +108,12 @@ export const getAttendanceByEmployee = (employeeId: string): AttendanceRecord[] 
 export const exportData = (): string => {
   const employees = getEmployees();
   const attendanceRecords = getAttendanceRecords();
+  const orgSettings = getOrgSettings();
   
   const data = {
     employees,
     attendanceRecords,
+    orgSettings,
     exportDate: new Date().toISOString()
   };
   
@@ -115,6 +128,11 @@ export const importData = (jsonData: string): boolean => {
         data.attendanceRecords && Array.isArray(data.attendanceRecords)) {
       localStorage.setItem(EMPLOYEES_KEY, JSON.stringify(data.employees));
       localStorage.setItem(ATTENDANCE_KEY, JSON.stringify(data.attendanceRecords));
+      
+      if (data.orgSettings) {
+        localStorage.setItem(ORG_SETTINGS_KEY, JSON.stringify(data.orgSettings));
+      }
+      
       return true;
     }
     

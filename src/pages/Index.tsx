@@ -1,10 +1,17 @@
 
 import { FC } from 'react';
 import Dashboard from './Dashboard';
+import { useApp } from '@/context/AppContext';
 
-// This component just redirects to the Dashboard component
 const Index: FC = () => {
-  return <Dashboard />;
+  const { orgSettings } = useApp();
+  
+  // This component displays the dashboard with organization title
+  return (
+    <div>
+      <Dashboard />
+    </div>
+  );
 };
 
 export default Index;

@@ -1,6 +1,7 @@
+
 import { useState, useRef } from 'react';
 import { useApp } from '@/context/AppContext';
-import { AlertCircle, Download, Upload, Trash2 } from 'lucide-react';
+import { AlertCircle, Download, Upload, Trash2, Building } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -22,6 +23,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Separator } from '@/components/ui/separator';
 import { toast } from "@/components/ui/use-toast";
+import OrgSettingsForm from '@/components/organization/OrgSettingsForm';
 
 const Settings = () => {
   const { exportData, importData, clearAllData } = useApp();
@@ -71,6 +73,18 @@ const Settings = () => {
       <h1 className="text-3xl font-bold tracking-tight">Settings</h1>
       
       <div className="grid gap-6 md:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <CardTitle>Organization Settings</CardTitle>
+            <CardDescription>
+              Configure your organization details
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <OrgSettingsForm />
+          </CardContent>
+        </Card>
+      
         <Card>
           <CardHeader>
             <CardTitle>Data Management</CardTitle>
@@ -140,49 +154,49 @@ const Settings = () => {
             </Button>
           </CardFooter>
         </Card>
-      </div>
       
-      <Card>
-        <CardHeader>
-          <CardTitle>About</CardTitle>
-          <CardDescription>
-            Application information
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div>
-            <h3 className="font-medium">Attend Easy</h3>
-            <p className="text-sm text-muted-foreground">
-              Version 1.0.0
-            </p>
-          </div>
-          
-          <div>
-            <h3 className="font-medium">Data Storage</h3>
-            <p className="text-sm text-muted-foreground">
-              All data is stored locally on your device in the browser's localStorage.
-              No data is sent to any server or external service.
-            </p>
-          </div>
-          
-          <div className="rounded-md bg-blue-50 dark:bg-blue-900/20 p-4">
-            <div className="flex">
-              <AlertCircle className="h-5 w-5 text-blue-500 dark:text-blue-400" />
-              <div className="ml-3">
-                <h3 className="text-sm font-medium text-blue-800 dark:text-blue-300">
-                  Offline Functionality
-                </h3>
-                <div className="mt-2 text-sm text-blue-700 dark:text-blue-400">
-                  <p>
-                    This application works entirely offline and stores all data locally.
-                    Make sure to export your data regularly as a backup.
-                  </p>
+        <Card>
+          <CardHeader>
+            <CardTitle>About</CardTitle>
+            <CardDescription>
+              Application information
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div>
+              <h3 className="font-medium">Attend Easy</h3>
+              <p className="text-sm text-muted-foreground">
+                Version 1.0.0
+              </p>
+            </div>
+            
+            <div>
+              <h3 className="font-medium">Data Storage</h3>
+              <p className="text-sm text-muted-foreground">
+                All data is stored locally on your device in the browser's localStorage.
+                No data is sent to any server or external service.
+              </p>
+            </div>
+            
+            <div className="rounded-md bg-blue-50 dark:bg-blue-900/20 p-4">
+              <div className="flex">
+                <AlertCircle className="h-5 w-5 text-blue-500 dark:text-blue-400" />
+                <div className="ml-3">
+                  <h3 className="text-sm font-medium text-blue-800 dark:text-blue-300">
+                    Offline Functionality
+                  </h3>
+                  <div className="mt-2 text-sm text-blue-700 dark:text-blue-400">
+                    <p>
+                      This application works entirely offline and stores all data locally.
+                      Make sure to export your data regularly as a backup.
+                    </p>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      </div>
       
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>

@@ -11,6 +11,7 @@ import {
   CalendarRange,
   Home,
   BarChart3,
+  Building,
 } from 'lucide-react';
 import { 
   PieChart, Pie, Cell, ResponsiveContainer, 
@@ -18,7 +19,7 @@ import {
 } from 'recharts';
 
 const Dashboard = () => {
-  const { employees, attendanceRecords, dashboardStats } = useApp();
+  const { employees, attendanceRecords, dashboardStats, orgSettings } = useApp();
   const [attendanceData, setAttendanceData] = useState<any[]>([]);
   const [recentAttendance, setRecentAttendance] = useState<any[]>([]);
   
@@ -56,21 +57,44 @@ const Dashboard = () => {
     }
   }, [employees, attendanceRecords]);
   
-  // Generate weekly attendance data
-  const weeklyData = [
-    { name: 'Mon', present: 20, absent: 3, late: 2 },
-    { name: 'Tue', present: 22, absent: 2, late: 1 },
-    { name: 'Wed', present: 19, absent: 4, late: 2 },
-    { name: 'Thu', present: 23, absent: 1, late: 1 },
-    { name: 'Fri', present: 21, absent: 2, late: 2 },
-  ];
+  // Generate weekly attendance data from actual attendance records
+  const getWeeklyAttendanceData = () => {
+    const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    const today = new Date();
+    const weekData = [];
+    
+    // Create data for the past 7 days
+    for (let i = 6; i >= 0; i--) {
+      const date = new Date();
+      date.setDate(today.getDate() - i);
+      const dateString = format(date, 'yyyy-MM-dd');
+      
+      const dayRecords = attendanceRecords.filter(record => record.date === dateString);
+      
+      weekData.push({
+        name: days[date.getDay()],
+        date: format(date, 'dd/MM'),
+        present: dayRecords.filter(r => r.status === 'present').length,
+        absent: dayRecords.filter(r => r.status === 'absent').length,
+        late: dayRecords.filter(r => r.status === 'late').length,
+        leave: dayRecords.filter(r => r.status === 'leave').length,
+        wfh: dayRecords.filter(r => r.status === 'wfh').length,
+      });
+    }
+    
+    return weekData;
+  };
   
+  const weeklyData = getWeeklyAttendanceData();
   const today = format(new Date(), 'dd MMMM yyyy');
   
   return (
     <div className="space-y-6 animate-fade-in">
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
+          <p className="text-sm text-muted-foreground">{orgSettings.name}</p>
+        </div>
         <p className="text-sm text-muted-foreground">{today}</p>
       </div>
       
@@ -155,11 +179,25 @@ const Dashboard = () => {
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="name" />
                 <YAxis />
-                <Tooltip />
+                <Tooltip 
+                  formatter={(value, name) => {
+                    const formattedName = name === 'present' ? 'Present' :
+                      name === 'absent' ? 'Absent' :
+                      name === 'late' ? 'Late' :
+                      name === 'leave' ? 'On Leave' : 'WFH';
+                    return [value, formattedName];
+                  }}
+                  labelFormatter={(label, items) => {
+                    const item = items[0]?.payload;
+                    return item ? `${label} (${item.date})` : label;
+                  }}
+                />
                 <Legend />
-                <Bar dataKey="present" fill="#10b981" />
-                <Bar dataKey="absent" fill="#f87171" />
-                <Bar dataKey="late" fill="#f59e0b" />
+                <Bar dataKey="present" fill="#10b981" name="Present" />
+                <Bar dataKey="absent" fill="#f87171" name="Absent" />
+                <Bar dataKey="late" fill="#f59e0b" name="Late" />
+                <Bar dataKey="leave" fill="#8b5cf6" name="Leave" />
+                <Bar dataKey="wfh" fill="#3b82f6" name="WFH" />
               </BarChart>
             </ResponsiveContainer>
           </CardContent>
@@ -173,7 +211,7 @@ const Dashboard = () => {
             </CardDescription>
           </CardHeader>
           <CardContent className="h-[300px]">
-            {attendanceData.length > 0 ? (
+            {attendanceData.length > 0 && attendanceData.some(item => item.value > 0) ? (
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie
@@ -185,14 +223,14 @@ const Dashboard = () => {
                     fill="#8884d8"
                     dataKey="value"
                     label={({ name, percent }) => 
-                      `${name} ${(percent * 100).toFixed(0)}%`
+                      percent > 0 ? `${name} ${(percent * 100).toFixed(0)}%` : ''
                     }
                   >
                     {attendanceData.map((entry, index) => (
                       <Cell key={`cell-${index}`} fill={entry.color} />
                     ))}
                   </Pie>
-                  <Tooltip />
+                  <Tooltip formatter={(value) => [`${value} employee${value !== 1 ? 's' : ''}`]} />
                 </PieChart>
               </ResponsiveContainer>
             ) : (
@@ -227,29 +265,7 @@ const Dashboard = () => {
                     </div>
                   </div>
                   <div>
-                    <span
-                      className={`status-badge ${
-                        record.status === 'present'
-                          ? 'status-badge-present'
-                          : record.status === 'absent'
-                          ? 'status-badge-absent'
-                          : record.status === 'late'
-                          ? 'status-badge-late'
-                          : record.status === 'leave'
-                          ? 'status-badge-leave'
-                          : 'status-badge-wfh'
-                      }`}
-                    >
-                      {record.status === 'present'
-                        ? 'Present'
-                        : record.status === 'absent'
-                        ? 'Absent'
-                        : record.status === 'late'
-                        ? 'Late'
-                        : record.status === 'leave'
-                        ? 'On Leave'
-                        : 'WFH'}
-                    </span>
+                    <StatusBadge status={record.status} />
                   </div>
                 </div>
               ))}

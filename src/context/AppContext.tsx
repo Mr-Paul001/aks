@@ -1,9 +1,8 @@
-
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { Employee, AttendanceRecord, DashboardStats, AttendanceStatus } from '@/types';
+import { Employee, AttendanceRecord, DashboardStats, AttendanceStatus, OrganizationSettings } from '@/types';
 import { 
   getEmployees, saveEmployees, getAttendanceRecords, 
-  saveAttendanceRecords, getAttendanceByDate
+  saveAttendanceRecords, getAttendanceByDate, getOrgSettings, saveOrgSettings
 } from '@/utils/storage';
 import { v4 as uuidv4 } from 'uuid';
 import { format } from 'date-fns';
@@ -22,6 +21,12 @@ interface AppContextProps {
   getAttendanceByDate: (date: string) => AttendanceRecord[];
   getAttendanceByEmployee: (employeeId: string) => AttendanceRecord[];
   dashboardStats: DashboardStats;
+  orgSettings: OrganizationSettings;
+  updateOrgSettings: (settings: OrganizationSettings) => void;
+  addDepartment: (department: string) => void;
+  addPosition: (position: string) => void;
+  removeDepartment: (department: string) => void;
+  removePosition: (position: string) => void;
   exportData: () => void;
   importData: (jsonData: string) => void;
   exportToCSV: (type: 'employees' | 'attendance') => void;
@@ -33,6 +38,11 @@ const AppContext = createContext<AppContextProps | undefined>(undefined);
 export const AppProvider = ({ children }: { children: ReactNode }) => {
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [attendanceRecords, setAttendanceRecords] = useState<AttendanceRecord[]>([]);
+  const [orgSettings, setOrgSettings] = useState<OrganizationSettings>({
+    name: 'My Organization',
+    departments: ['HR', 'IT', 'Finance', 'Marketing', 'Operations'],
+    positions: ['Manager', 'Team Lead', 'Senior Staff', 'Junior Staff', 'Intern']
+  });
   const [dashboardStats, setDashboardStats] = useState<DashboardStats>({
     totalEmployees: 0,
     presentToday: 0,
@@ -47,9 +57,13 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     const storedEmployees = getEmployees();
     const storedRecords = getAttendanceRecords();
+    const storedOrgSettings = getOrgSettings();
     
     setEmployees(storedEmployees);
     setAttendanceRecords(storedRecords);
+    if (storedOrgSettings) {
+      setOrgSettings(storedOrgSettings);
+    }
   }, []);
   
   // Calculate dashboard stats whenever employees or attendance records change
@@ -84,6 +98,110 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       attendanceRate: attendanceRate
     });
   }, [employees, attendanceRecords]);
+  
+  // Organization settings handlers
+  const updateOrgSettingsHandler = (settings: OrganizationSettings) => {
+    setOrgSettings(settings);
+    saveOrgSettings(settings);
+    toast({
+      title: "Settings updated",
+      description: "Organization settings have been updated."
+    });
+  };
+  
+  const addDepartmentHandler = (department: string) => {
+    if (orgSettings.departments.includes(department)) {
+      toast({
+        title: "Department already exists",
+        description: "This department already exists in the organization.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    const updatedSettings = {
+      ...orgSettings,
+      departments: [...orgSettings.departments, department]
+    };
+    setOrgSettings(updatedSettings);
+    saveOrgSettings(updatedSettings);
+    toast({
+      title: "Department added",
+      description: `${department} department has been added.`
+    });
+  };
+  
+  const addPositionHandler = (position: string) => {
+    if (orgSettings.positions.includes(position)) {
+      toast({
+        title: "Position already exists",
+        description: "This position already exists in the organization.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    const updatedSettings = {
+      ...orgSettings,
+      positions: [...orgSettings.positions, position]
+    };
+    setOrgSettings(updatedSettings);
+    saveOrgSettings(updatedSettings);
+    toast({
+      title: "Position added",
+      description: `${position} position has been added.`
+    });
+  };
+  
+  const removeDepartmentHandler = (department: string) => {
+    // Check if any employee is using this department
+    const isInUse = employees.some(emp => emp.department === department);
+    
+    if (isInUse) {
+      toast({
+        title: "Cannot remove department",
+        description: "This department is assigned to one or more employees.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    const updatedSettings = {
+      ...orgSettings,
+      departments: orgSettings.departments.filter(d => d !== department)
+    };
+    setOrgSettings(updatedSettings);
+    saveOrgSettings(updatedSettings);
+    toast({
+      title: "Department removed",
+      description: `${department} department has been removed.`
+    });
+  };
+  
+  const removePositionHandler = (position: string) => {
+    // Check if any employee is using this position
+    const isInUse = employees.some(emp => emp.position === position);
+    
+    if (isInUse) {
+      toast({
+        title: "Cannot remove position",
+        description: "This position is assigned to one or more employees.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    const updatedSettings = {
+      ...orgSettings,
+      positions: orgSettings.positions.filter(p => p !== position)
+    };
+    setOrgSettings(updatedSettings);
+    saveOrgSettings(updatedSettings);
+    toast({
+      title: "Position removed",
+      description: `${position} position has been removed.`
+    });
+  };
   
   const addEmployeeHandler = (employeeData: Omit<Employee, 'id'>) => {
     const newEmployee = {
@@ -206,6 +324,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     const data = {
       employees,
       attendanceRecords,
+      orgSettings,
       exportDate: new Date().toISOString()
     };
     
@@ -215,7 +334,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     const a = document.createElement('a');
     
     a.href = url;
-    a.download = `attendance-export-${format(new Date(), 'yyyy-MM-dd')}.json`;
+    a.download = `${orgSettings.name.replace(/\s+/g, '-').toLowerCase()}-export-${format(new Date(), 'yyyy-MM-dd')}.json`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -235,6 +354,12 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
           data.attendanceRecords && Array.isArray(data.attendanceRecords)) {
         setEmployees(data.employees);
         setAttendanceRecords(data.attendanceRecords);
+        
+        // Import org settings if they exist
+        if (data.orgSettings) {
+          setOrgSettings(data.orgSettings);
+          saveOrgSettings(data.orgSettings);
+        }
         
         saveEmployees(data.employees);
         saveAttendanceRecords(data.attendanceRecords);
@@ -279,7 +404,8 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         ID: emp.employeeId,
         Department: emp.department,
         Position: emp.position,
-        'Join Date': emp.joinDate
+        'Join Date': emp.joinDate,
+        'Organization': orgSettings.name
       }));
       
       // Create CSV
@@ -302,7 +428,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       const a = document.createElement('a');
       
       a.href = url;
-      a.download = `employees-${format(new Date(), 'yyyy-MM-dd')}.csv`;
+      a.download = `${orgSettings.name.replace(/\s+/g, '-').toLowerCase()}-employees-${format(new Date(), 'yyyy-MM-dd')}.csv`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
@@ -326,6 +452,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       const csvData = attendanceRecords.map(record => {
         const employee = employees.find(emp => emp.id === record.employeeId);
         return {
+          'Organization': orgSettings.name,
           Date: record.date,
           'Employee Name': employee ? employee.name : 'Unknown',
           'Employee ID': employee ? employee.employeeId : 'Unknown',
@@ -355,7 +482,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       const a = document.createElement('a');
       
       a.href = url;
-      a.download = `attendance-${format(new Date(), 'yyyy-MM-dd')}.csv`;
+      a.download = `${orgSettings.name.replace(/\s+/g, '-').toLowerCase()}-attendance-${format(new Date(), 'yyyy-MM-dd')}.csv`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
@@ -392,6 +519,12 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     getAttendanceByDate: getAttendanceByDateHandler,
     getAttendanceByEmployee: getAttendanceByEmployeeHandler,
     dashboardStats,
+    orgSettings,
+    updateOrgSettings: updateOrgSettingsHandler,
+    addDepartment: addDepartmentHandler,
+    addPosition: addPositionHandler,
+    removeDepartment: removeDepartmentHandler,
+    removePosition: removePositionHandler,
     exportData: exportDataHandler,
     importData: importDataHandler,
     exportToCSV: exportToCSVHandler,

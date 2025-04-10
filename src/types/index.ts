@@ -28,3 +28,9 @@ export interface DashboardStats {
   wfhToday: number;
   attendanceRate: number;
 }
+
+export interface OrganizationSettings {
+  name: string;
+  departments: string[];
+  positions: string[];
+}

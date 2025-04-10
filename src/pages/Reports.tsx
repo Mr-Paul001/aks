@@ -2,10 +2,11 @@
 import { useState } from 'react';
 import { useApp } from '@/context/AppContext';
 import { Calendar as CalendarIcon, Download, FileDown, FilePieChart } from 'lucide-react';
-import { format, startOfMonth, endOfMonth, eachDayOfInterval } from 'date-fns';
+import { format, startOfMonth, endOfMonth, eachDayOfInterval, startOfWeek, endOfWeek, addDays, subWeeks, addWeeks } from 'date-fns';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Popover,
   PopoverContent,
@@ -30,27 +31,56 @@ import {
 import StatusBadge from '@/components/status/StatusBadge';
 import { AttendanceStatus } from '@/types';
 
+type ViewMode = 'daily' | 'weekly' | 'monthly';
+
 const Reports = () => {
-  const { employees, attendanceRecords, exportToCSV, getEmployeeById } = useApp();
+  const { employees, attendanceRecords, exportToCSV, getEmployeeById, orgSettings } = useApp();
   
-  const [selectedMonth, setSelectedMonth] = useState<Date>(new Date());
+  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [selectedEmployee, setSelectedEmployee] = useState<string>('');
+  const [viewMode, setViewMode] = useState<ViewMode>('monthly');
   
-  const firstDayOfMonth = startOfMonth(selectedMonth);
-  const lastDayOfMonth = endOfMonth(selectedMonth);
-  const daysInMonth = eachDayOfInterval({ start: firstDayOfMonth, end: lastDayOfMonth });
+  // Get date ranges based on view mode
+  const getDateRange = () => {
+    if (viewMode === 'daily') {
+      return {
+        start: selectedDate,
+        end: selectedDate,
+        label: format(selectedDate, 'MMMM d, yyyy')
+      };
+    } else if (viewMode === 'weekly') {
+      const weekStart = startOfWeek(selectedDate, { weekStartsOn: 0 });
+      const weekEnd = endOfWeek(selectedDate, { weekStartsOn: 0 });
+      return {
+        start: weekStart,
+        end: weekEnd,
+        label: `${format(weekStart, 'MMM d')} - ${format(weekEnd, 'MMM d, yyyy')}`
+      };
+    } else {
+      const monthStart = startOfMonth(selectedDate);
+      const monthEnd = endOfMonth(selectedDate);
+      return {
+        start: monthStart,
+        end: monthEnd,
+        label: format(selectedDate, 'MMMM yyyy')
+      };
+    }
+  };
   
-  // Filter records for the selected month
-  const monthStart = format(firstDayOfMonth, 'yyyy-MM-dd');
-  const monthEnd = format(lastDayOfMonth, 'yyyy-MM-dd');
+  const dateRange = getDateRange();
+  const daysInRange = eachDayOfInterval({ start: dateRange.start, end: dateRange.end });
   
-  const monthRecords = attendanceRecords.filter((record) => {
-    return record.date >= monthStart && record.date <= monthEnd;
+  // Filter records for the selected date range
+  const rangeStartStr = format(dateRange.start, 'yyyy-MM-dd');
+  const rangeEndStr = format(dateRange.end, 'yyyy-MM-dd');
+  
+  const recordsInRange = attendanceRecords.filter((record) => {
+    return record.date >= rangeStartStr && record.date <= rangeEndStr;
   });
   
-  // Generate employee monthly summary
+  // Generate employee summary for the selected date range
   const employeeSummary = employees.map((employee) => {
-    const employeeRecords = monthRecords.filter(
+    const employeeRecords = recordsInRange.filter(
       (record) => record.employeeId === employee.id
     );
     
@@ -62,9 +92,9 @@ const Reports = () => {
       wfh: employeeRecords.filter((r) => r.status === 'wfh').length,
     };
     
-    const totalDays = daysInMonth.length;
+    const totalDays = daysInRange.length;
     const markedDays = employeeRecords.length;
-    const attendanceRate = Math.round((statusCounts.present / totalDays) * 100);
+    const attendanceRate = totalDays > 0 ? Math.round((statusCounts.present / totalDays) * 100) : 0;
     
     return {
       id: employee.id,
@@ -86,7 +116,7 @@ const Reports = () => {
   const getEmployeeCalendar = () => {
     if (!selectedEmployee) return [];
     
-    return daysInMonth.map((day) => {
+    return daysInRange.map((day) => {
       const dateString = format(day, 'yyyy-MM-dd');
       const record = attendanceRecords.find(
         (r) => r.employeeId === selectedEmployee && r.date === dateString
@@ -113,10 +143,33 @@ const Reports = () => {
     }
   };
   
+  const handlePrevious = () => {
+    if (viewMode === 'daily') {
+      setSelectedDate(prev => addDays(prev, -1));
+    } else if (viewMode === 'weekly') {
+      setSelectedDate(prev => subWeeks(prev, 1));
+    } else {
+      setSelectedDate(prev => new Date(prev.getFullYear(), prev.getMonth() - 1, 1));
+    }
+  };
+
+  const handleNext = () => {
+    if (viewMode === 'daily') {
+      setSelectedDate(prev => addDays(prev, 1));
+    } else if (viewMode === 'weekly') {
+      setSelectedDate(prev => addWeeks(prev, 1));
+    } else {
+      setSelectedDate(prev => new Date(prev.getFullYear(), prev.getMonth() + 1, 1));
+    }
+  };
+  
   return (
     <div className="space-y-6 animate-fade-in">
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold tracking-tight">Reports & Analytics</h1>
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Reports & Analytics</h1>
+          <p className="text-sm text-muted-foreground">{orgSettings.name}</p>
+        </div>
         <div className="flex items-center space-x-2">
           <Button
             variant="outline"
@@ -137,33 +190,57 @@ const Reports = () => {
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
         <Card className="lg:col-span-1">
           <CardHeader>
-            <CardTitle>Select Month</CardTitle>
-            <CardDescription>Choose a month to view reports</CardDescription>
+            <CardTitle>Report Settings</CardTitle>
+            <CardDescription>Configure your attendance report</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="grid gap-4">
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant={"outline"}
-                    className={cn(
-                      "w-full justify-start text-left font-normal",
-                    )}
-                  >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {format(selectedMonth, 'MMMM yyyy')}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0">
-                  <Calendar
-                    mode="single"
-                    selected={selectedMonth}
-                    onSelect={(date) => date && setSelectedMonth(date)}
-                    initialFocus
-                    className={cn("p-3 pointer-events-auto")}
-                  />
-                </PopoverContent>
-              </Popover>
+              <Tabs
+                value={viewMode}
+                onValueChange={(v) => setViewMode(v as ViewMode)}
+                className="w-full"
+              >
+                <TabsList className="grid w-full grid-cols-3">
+                  <TabsTrigger value="daily">Daily</TabsTrigger>
+                  <TabsTrigger value="weekly">Weekly</TabsTrigger>
+                  <TabsTrigger value="monthly">Monthly</TabsTrigger>
+                </TabsList>
+              </Tabs>
+              
+              <div className="flex items-center justify-between">
+                <Button variant="outline" size="icon" onClick={handlePrevious}>
+                  <span className="sr-only">Previous period</span>
+                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4"><path d="m15 18-6-6 6-6"/></svg>
+                </Button>
+                
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant={"outline"}
+                      className={cn(
+                        "justify-start text-left font-normal",
+                      )}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {dateRange.label}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0">
+                    <Calendar
+                      mode="single"
+                      selected={selectedDate}
+                      onSelect={(date) => date && setSelectedDate(date)}
+                      initialFocus
+                      className={cn("p-3 pointer-events-auto")}
+                    />
+                  </PopoverContent>
+                </Popover>
+                
+                <Button variant="outline" size="icon" onClick={handleNext}>
+                  <span className="sr-only">Next period</span>
+                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4"><path d="m9 18 6-6-6-6"/></svg>
+                </Button>
+              </div>
               
               <Select
                 value={selectedEmployee}
@@ -183,7 +260,7 @@ const Reports = () => {
               
               {selectedEmployee && (
                 <div className="text-sm space-y-2 mt-2">
-                  <h4 className="font-semibold">Month Summary</h4>
+                  <h4 className="font-semibold">{viewMode === 'daily' ? 'Day' : viewMode === 'weekly' ? 'Week' : 'Month'} Summary</h4>
                   {employeeSummary
                     .filter((summary) => summary.id === selectedEmployee)
                     .map((summary) => (
@@ -224,12 +301,12 @@ const Reports = () => {
           <CardHeader>
             <CardTitle>
               {selectedEmployee 
-                ? `${getEmployeeById(selectedEmployee)?.name}'s Attendance Calendar` 
-                : 'Monthly Attendance Summary'
+                ? `${getEmployeeById(selectedEmployee)?.name}'s Attendance ${viewMode === 'daily' ? 'Day' : viewMode === 'weekly' ? 'Week' : 'Month'}`
+                : `${viewMode === 'daily' ? 'Daily' : viewMode === 'weekly' ? 'Weekly' : 'Monthly'} Attendance Summary`
               }
             </CardTitle>
             <CardDescription>
-              {format(selectedMonth, 'MMMM yyyy')}
+              {dateRange.label}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -241,8 +318,8 @@ const Reports = () => {
                   </div>
                 ))}
                 
-                {/* Add empty cells for days before the first day of the month */}
-                {Array.from({ length: firstDayOfMonth.getDay() }).map((_, index) => (
+                {/* Only add empty cells at the start for monthly view */}
+                {viewMode === 'monthly' && Array.from({ length: dateRange.start.getDay() }).map((_, index) => (
                   <div key={`empty-start-${index}`} className="h-16" />
                 ))}
                 
