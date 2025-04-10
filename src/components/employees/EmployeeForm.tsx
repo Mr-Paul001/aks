@@ -67,8 +67,12 @@ const EmployeeForm = ({ employee, onSubmit, onCancel }: EmployeeFormProps) => {
   });
 
   const handleSubmit = (values: z.infer<typeof formSchema>) => {
+    // Ensure the data matches the required type
     onSubmit({
-      ...values,
+      name: values.name,
+      employeeId: values.employeeId,
+      department: values.department,
+      position: values.position,
       joinDate: format(values.joinDate, 'yyyy-MM-dd'),
     });
   };

@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -69,8 +68,10 @@ const AttendanceForm = ({ employees, record, onSubmit, onCancel }: AttendanceFor
 
   const handleSubmit = (values: z.infer<typeof formSchema>) => {
     onSubmit({
-      ...values,
+      employeeId: values.employeeId,
       date: format(values.date, 'yyyy-MM-dd'),
+      status: values.status,
+      notes: values.notes,
     });
   };
 
@@ -86,7 +87,7 @@ const AttendanceForm = ({ employees, record, onSubmit, onCancel }: AttendanceFor
               <Select 
                 onValueChange={field.onChange} 
                 defaultValue={field.value}
-                disabled={!!record} // If editing an existing record, don't allow employee change
+                disabled={!!record}
               >
                 <FormControl>
                   <SelectTrigger>
