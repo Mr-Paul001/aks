@@ -33,4 +33,5 @@ export interface OrganizationSettings {
   name: string;
   departments: string[];
   positions: string[];
+  accentColor?: string;
 }

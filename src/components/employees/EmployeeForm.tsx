@@ -10,6 +10,14 @@ import { Employee } from '@/types';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
+import { useApp } from '@/context/AppContext';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import {
   Form,
   FormControl,
@@ -50,6 +58,7 @@ interface EmployeeFormProps {
 }
 
 const EmployeeForm = ({ employee, onSubmit, onCancel }: EmployeeFormProps) => {
+  const { orgSettings } = useApp();
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: employee
@@ -114,9 +123,24 @@ const EmployeeForm = ({ employee, onSubmit, onCancel }: EmployeeFormProps) => {
           render={({ field }) => (
             <FormItem>
               <FormLabel>Department</FormLabel>
-              <FormControl>
-                <Input placeholder="Enter department" {...field} />
-              </FormControl>
+              <Select onValueChange={field.onChange} defaultValue={field.value}>
+                <FormControl>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select a department" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  {orgSettings.departments.length > 0 ? (
+                    orgSettings.departments.map((dept) => (
+                      <SelectItem key={dept} value={dept}>
+                        {dept}
+                      </SelectItem>
+                    ))
+                  ) : (
+                    <SelectItem value="default">Default Department</SelectItem>
+                  )}
+                </SelectContent>
+              </Select>
               <FormMessage />
             </FormItem>
           )}
@@ -128,9 +152,24 @@ const EmployeeForm = ({ employee, onSubmit, onCancel }: EmployeeFormProps) => {
           render={({ field }) => (
             <FormItem>
               <FormLabel>Position</FormLabel>
-              <FormControl>
-                <Input placeholder="Enter position" {...field} />
-              </FormControl>
+              <Select onValueChange={field.onChange} defaultValue={field.value}>
+                <FormControl>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select a position" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  {orgSettings.positions.length > 0 ? (
+                    orgSettings.positions.map((pos) => (
+                      <SelectItem key={pos} value={pos}>
+                        {pos}
+                      </SelectItem>
+                    ))
+                  ) : (
+                    <SelectItem value="default">Default Position</SelectItem>
+                  )}
+                </SelectContent>
+              </Select>
               <FormMessage />
             </FormItem>
           )}

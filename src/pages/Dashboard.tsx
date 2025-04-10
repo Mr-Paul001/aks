@@ -15,27 +15,87 @@ import {
   Building,
 } from 'lucide-react';
 import { 
-  PieChart, Pie, Cell, ResponsiveContainer, 
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend 
+  PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartTooltip, Legend as RechartLegend,
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, LabelList 
 } from 'recharts';
 
 const Dashboard = () => {
-  const { employees, attendanceRecords, dashboardStats, orgSettings } = useApp();
+  const { employees, attendanceRecords, dashboardStats, orgSettings, accentColor } = useApp();
   const [attendanceData, setAttendanceData] = useState<any[]>([]);
   const [recentAttendance, setRecentAttendance] = useState<any[]>([]);
   
   // Calculate attendance data for pie chart
   useEffect(() => {
     if (dashboardStats.totalEmployees > 0) {
+      const presentEmployees = attendanceRecords
+        .filter(record => record.date === format(new Date(), 'yyyy-MM-dd') && record.status === 'present')
+        .map(record => {
+          const employee = employees.find(emp => emp.id === record.employeeId);
+          return employee ? employee.name : 'Unknown';
+        });
+
+      const absentEmployees = attendanceRecords
+        .filter(record => record.date === format(new Date(), 'yyyy-MM-dd') && record.status === 'absent')
+        .map(record => {
+          const employee = employees.find(emp => emp.id === record.employeeId);
+          return employee ? employee.name : 'Unknown';
+        });
+
+      const lateEmployees = attendanceRecords
+        .filter(record => record.date === format(new Date(), 'yyyy-MM-dd') && record.status === 'late')
+        .map(record => {
+          const employee = employees.find(emp => emp.id === record.employeeId);
+          return employee ? employee.name : 'Unknown';
+        });
+
+      const leaveEmployees = attendanceRecords
+        .filter(record => record.date === format(new Date(), 'yyyy-MM-dd') && record.status === 'leave')
+        .map(record => {
+          const employee = employees.find(emp => emp.id === record.employeeId);
+          return employee ? employee.name : 'Unknown';
+        });
+
+      const wfhEmployees = attendanceRecords
+        .filter(record => record.date === format(new Date(), 'yyyy-MM-dd') && record.status === 'wfh')
+        .map(record => {
+          const employee = employees.find(emp => emp.id === record.employeeId);
+          return employee ? employee.name : 'Unknown';
+        });
+
       setAttendanceData([
-        { name: 'Present', value: dashboardStats.presentToday, color: '#10b981' },
-        { name: 'Absent', value: dashboardStats.absentToday, color: '#f87171' },
-        { name: 'Late', value: dashboardStats.lateToday, color: '#f59e0b' },
-        { name: 'Leave', value: dashboardStats.onLeaveToday, color: '#8b5cf6' },
-        { name: 'WFH', value: dashboardStats.wfhToday, color: '#3b82f6' },
+        { 
+          name: 'Present', 
+          value: dashboardStats.presentToday, 
+          color: '#10b981',
+          employees: presentEmployees 
+        },
+        { 
+          name: 'Absent', 
+          value: dashboardStats.absentToday, 
+          color: '#f87171',
+          employees: absentEmployees 
+        },
+        { 
+          name: 'Late', 
+          value: dashboardStats.lateToday, 
+          color: '#f59e0b',
+          employees: lateEmployees 
+        },
+        { 
+          name: 'Leave', 
+          value: dashboardStats.onLeaveToday, 
+          color: '#8b5cf6',
+          employees: leaveEmployees 
+        },
+        { 
+          name: 'WFH', 
+          value: dashboardStats.wfhToday, 
+          color: '#3b82f6',
+          employees: wfhEmployees 
+        },
       ]);
     }
-  }, [dashboardStats]);
+  }, [dashboardStats, employees, attendanceRecords]);
   
   // Get recent attendance records
   useEffect(() => {
@@ -58,7 +118,7 @@ const Dashboard = () => {
     }
   }, [employees, attendanceRecords]);
   
-  // Generate weekly attendance data from actual attendance records
+  // Generate weekly attendance data from actual attendance records with employee names
   const getWeeklyAttendanceData = () => {
     const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
     const today = new Date();
@@ -72,6 +132,41 @@ const Dashboard = () => {
       
       const dayRecords = attendanceRecords.filter(record => record.date === dateString);
       
+      const presentEmployees = dayRecords
+        .filter(r => r.status === 'present')
+        .map(record => {
+          const employee = employees.find(emp => emp.id === record.employeeId);
+          return employee ? employee.name : 'Unknown';
+        });
+      
+      const absentEmployees = dayRecords
+        .filter(r => r.status === 'absent')
+        .map(record => {
+          const employee = employees.find(emp => emp.id === record.employeeId);
+          return employee ? employee.name : 'Unknown';
+        });
+      
+      const lateEmployees = dayRecords
+        .filter(r => r.status === 'late')
+        .map(record => {
+          const employee = employees.find(emp => emp.id === record.employeeId);
+          return employee ? employee.name : 'Unknown';
+        });
+      
+      const leaveEmployees = dayRecords
+        .filter(r => r.status === 'leave')
+        .map(record => {
+          const employee = employees.find(emp => emp.id === record.employeeId);
+          return employee ? employee.name : 'Unknown';
+        });
+      
+      const wfhEmployees = dayRecords
+        .filter(r => r.status === 'wfh')
+        .map(record => {
+          const employee = employees.find(emp => emp.id === record.employeeId);
+          return employee ? employee.name : 'Unknown';
+        });
+      
       weekData.push({
         name: days[date.getDay()],
         date: format(date, 'dd/MM'),
@@ -80,6 +175,11 @@ const Dashboard = () => {
         late: dayRecords.filter(r => r.status === 'late').length,
         leave: dayRecords.filter(r => r.status === 'leave').length,
         wfh: dayRecords.filter(r => r.status === 'wfh').length,
+        presentEmployees,
+        absentEmployees,
+        lateEmployees,
+        leaveEmployees,
+        wfhEmployees
       });
     }
     
@@ -88,6 +188,10 @@ const Dashboard = () => {
   
   const weeklyData = getWeeklyAttendanceData();
   const today = format(new Date(), 'dd MMMM yyyy');
+
+  const getMainColor = () => {
+    return accentColor || '#8b5cf6'; // Default to purple if no accent color is set
+  };
   
   return (
     <div className="space-y-6 animate-fade-in">
@@ -181,12 +285,20 @@ const Dashboard = () => {
                 <XAxis dataKey="name" />
                 <YAxis />
                 <Tooltip 
-                  formatter={(value, name) => {
+                  formatter={(value, name, props) => {
                     const formattedName = name === 'present' ? 'Present' :
                       name === 'absent' ? 'Absent' :
                       name === 'late' ? 'Late' :
                       name === 'leave' ? 'On Leave' : 'WFH';
-                    return [value, formattedName];
+                    
+                    // Add employees list to tooltip
+                    const employeesKey = `${name}Employees`;
+                    const employees = props.payload[employeesKey];
+                    const employeesList = employees && employees.length > 0
+                      ? `\nEmployees: ${employees.join(', ')}`
+                      : '';
+                    
+                    return [`${value}${employeesList}`, formattedName];
                   }}
                   labelFormatter={(label, items) => {
                     const item = items[0]?.payload;
@@ -194,7 +306,7 @@ const Dashboard = () => {
                   }}
                 />
                 <Legend />
-                <Bar dataKey="present" fill="#10b981" name="Present" />
+                <Bar dataKey="present" fill={getMainColor()} name="Present" />
                 <Bar dataKey="absent" fill="#f87171" name="Absent" />
                 <Bar dataKey="late" fill="#f59e0b" name="Late" />
                 <Bar dataKey="leave" fill="#8b5cf6" name="Leave" />
@@ -221,7 +333,7 @@ const Dashboard = () => {
                     cy="50%"
                     labelLine={false}
                     outerRadius={100}
-                    fill="#8884d8"
+                    fill={getMainColor()}
                     dataKey="value"
                     label={({ name, percent }) => 
                       percent > 0 ? `${name} ${(percent * 100).toFixed(0)}%` : ''
@@ -231,7 +343,17 @@ const Dashboard = () => {
                       <Cell key={`cell-${index}`} fill={entry.color} />
                     ))}
                   </Pie>
-                  <Tooltip formatter={(value) => [`${value} employee${value !== 1 ? 's' : ''}`]} />
+                  <RechartTooltip 
+                    formatter={(value, name, props) => {
+                      const { employees } = props.payload;
+                      const employeesList = employees && employees.length > 0
+                        ? `\nEmployees: ${employees.join(', ')}`
+                        : '';
+                      
+                      return [`${value} employee${value !== 1 ? 's' : ''}${employeesList}`];
+                    }} 
+                  />
+                  <RechartLegend />
                 </PieChart>
               </ResponsiveContainer>
             ) : (
