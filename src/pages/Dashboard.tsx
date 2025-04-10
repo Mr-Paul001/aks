@@ -291,7 +291,7 @@ const Dashboard = () => {
                       name === 'late' ? 'Late' :
                       name === 'leave' ? 'On Leave' : 'WFH';
                     
-                    // Add employees list to tooltip
+                    // Show employees list in tooltip
                     const employeesKey = `${name}Employees`;
                     const employees = props.payload[employeesKey];
                     const employeesList = employees && employees.length > 0

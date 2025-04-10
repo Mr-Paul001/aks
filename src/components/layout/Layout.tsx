@@ -4,8 +4,10 @@ import { Outlet } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import { Button } from '@/components/ui/button';
 import { Sun, Moon } from 'lucide-react';
+import { useApp } from '@/context/AppContext';
 
 const Layout = () => {
+  const { accentColor } = useApp();
   const [theme, setTheme] = useState<'light' | 'dark'>(
     window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
   );
@@ -13,7 +15,13 @@ const Layout = () => {
   useEffect(() => {
     // Apply theme to document
     document.documentElement.classList.toggle('dark', theme === 'dark');
-  }, [theme]);
+    
+    // Apply accent color to CSS variables
+    if (accentColor) {
+      document.documentElement.style.setProperty('--accent', accentColor);
+      document.documentElement.style.setProperty('--accent-foreground', '#ffffff');
+    }
+  }, [theme, accentColor]);
 
   const toggleTheme = () => {
     setTheme(theme === 'light' ? 'dark' : 'light');

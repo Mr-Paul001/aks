@@ -1,5 +1,4 @@
-
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useApp } from '@/context/AppContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -7,6 +6,7 @@ import { Label } from '@/components/ui/label';
 import { PlusCircle, X, Check, Palette } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { OrganizationSettings } from '@/types';
+import { toast } from "@/components/ui/use-toast";
 import {
   Popover,
   PopoverContent,
@@ -20,6 +20,12 @@ const OrgSettingsForm = () => {
   const [newDepartment, setNewDepartment] = useState('');
   const [newPosition, setNewPosition] = useState('');
   const [accentColor, setAccentColor] = useState(orgSettings.accentColor || '#8b5cf6');
+  
+  // Update form state when orgSettings changes (like after saving or initial load)
+  useEffect(() => {
+    setOrgName(orgSettings.name);
+    setAccentColor(orgSettings.accentColor || '#8b5cf6');
+  }, [orgSettings]);
   
   const colorOptions = [
     '#8b5cf6', // Purple (default)
@@ -45,6 +51,10 @@ const OrgSettingsForm = () => {
       accentColor,
     };
     updateOrgSettings(updatedSettings);
+    toast({
+      title: "Settings updated",
+      description: "Your organization settings have been saved."
+    });
   };
   
   const handleAddDepartment = () => {
