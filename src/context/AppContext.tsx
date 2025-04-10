@@ -22,6 +22,7 @@ interface AppContextProps {
   getAttendanceByEmployee: (employeeId: string) => AttendanceRecord[];
   dashboardStats: DashboardStats;
   orgSettings: OrganizationSettings;
+  accentColor: string | undefined;
   updateOrgSettings: (settings: OrganizationSettings) => void;
   addDepartment: (department: string) => void;
   addPosition: (position: string) => void;
@@ -41,7 +42,8 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   const [orgSettings, setOrgSettings] = useState<OrganizationSettings>({
     name: 'My Organization',
     departments: ['HR', 'IT', 'Finance', 'Marketing', 'Operations'],
-    positions: ['Manager', 'Team Lead', 'Senior Staff', 'Junior Staff', 'Intern']
+    positions: ['Manager', 'Team Lead', 'Senior Staff', 'Junior Staff', 'Intern'],
+    accentColor: '#007BFF'
   });
   const [dashboardStats, setDashboardStats] = useState<DashboardStats>({
     totalEmployees: 0,
@@ -53,7 +55,6 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     attendanceRate: 0
   });
   
-  // Load data from localStorage on component mount
   useEffect(() => {
     const storedEmployees = getEmployees();
     const storedRecords = getAttendanceRecords();
@@ -66,7 +67,6 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     }
   }, []);
   
-  // Calculate dashboard stats whenever employees or attendance records change
   useEffect(() => {
     const today = format(new Date(), 'yyyy-MM-dd');
     const todayRecords = getAttendanceByDate(today);
@@ -99,7 +99,6 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     });
   }, [employees, attendanceRecords]);
   
-  // Organization settings handlers
   const updateOrgSettingsHandler = (settings: OrganizationSettings) => {
     setOrgSettings(settings);
     saveOrgSettings(settings);
@@ -154,7 +153,6 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   };
   
   const removeDepartmentHandler = (department: string) => {
-    // Check if any employee is using this department
     const isInUse = employees.some(emp => emp.department === department);
     
     if (isInUse) {
@@ -179,7 +177,6 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   };
   
   const removePositionHandler = (position: string) => {
-    // Check if any employee is using this position
     const isInUse = employees.some(emp => emp.position === position);
     
     if (isInUse) {
@@ -237,7 +234,6 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     setEmployees(updatedEmployees);
     saveEmployees(updatedEmployees);
     
-    // Also delete related attendance records
     const updatedRecords = attendanceRecords.filter(record => record.employeeId !== id);
     setAttendanceRecords(updatedRecords);
     saveAttendanceRecords(updatedRecords);
@@ -257,7 +253,6 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       timestamp: Date.now()
     };
     
-    // Check if a record for this employee on this day already exists
     const existingIndex = attendanceRecords.findIndex(
       r => r.employeeId === newRecord.employeeId && r.date === newRecord.date
     );
@@ -265,7 +260,6 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     let updatedRecords;
     
     if (existingIndex !== -1) {
-      // Update existing record
       updatedRecords = [...attendanceRecords];
       updatedRecords[existingIndex] = newRecord;
       toast({
@@ -273,7 +267,6 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         description: "The attendance record has been updated."
       });
     } else {
-      // Add new record
       updatedRecords = [...attendanceRecords, newRecord];
       toast({
         title: "Attendance recorded",
@@ -355,7 +348,6 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         setEmployees(data.employees);
         setAttendanceRecords(data.attendanceRecords);
         
-        // Import org settings if they exist
         if (data.orgSettings) {
           setOrgSettings(data.orgSettings);
           saveOrgSettings(data.orgSettings);
@@ -398,7 +390,6 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         return;
       }
       
-      // Simplified employee data for CSV
       const csvData = employees.map(emp => ({
         Name: emp.name,
         ID: emp.employeeId,
@@ -408,7 +399,6 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         'Organization': orgSettings.name
       }));
       
-      // Create CSV
       const headers = Object.keys(csvData[0]);
       const csvRows = [
         headers.join(','),
@@ -448,7 +438,6 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         return;
       }
       
-      // Enriched attendance data with employee names
       const csvData = attendanceRecords.map(record => {
         const employee = employees.find(emp => emp.id === record.employeeId);
         return {
@@ -462,7 +451,6 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         };
       });
       
-      // Create CSV
       const headers = Object.keys(csvData[0]);
       const csvRows = [
         headers.join(','),
@@ -520,6 +508,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     getAttendanceByEmployee: getAttendanceByEmployeeHandler,
     dashboardStats,
     orgSettings,
+    accentColor: orgSettings.accentColor,
     updateOrgSettings: updateOrgSettingsHandler,
     addDepartment: addDepartmentHandler,
     addPosition: addPositionHandler,
