@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useApp } from '@/context/AppContext';
 import { Plus, Pencil, Trash2, FileText, Search } from 'lucide-react';
@@ -216,7 +215,6 @@ const Employees = () => {
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction 
-              variant="destructive"
               onClick={handleDelete}
             >
               Delete

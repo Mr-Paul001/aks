@@ -1,4 +1,3 @@
-
 import { useState, useRef } from 'react';
 import { useApp } from '@/context/AppContext';
 import { AlertCircle, Download, Upload, Trash2 } from 'lucide-react';
@@ -47,14 +46,7 @@ const Settings = () => {
     reader.onload = (e) => {
       const content = e.target?.result as string;
       try {
-        const success = importData(content);
-        if (!success) {
-          toast({
-            title: "Import failed",
-            description: "The selected file does not contain valid attendance data.",
-            variant: "destructive"
-          });
-        }
+        importData(content);
       } catch (error) {
         toast({
           title: "Import failed",
@@ -205,7 +197,6 @@ const Settings = () => {
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction 
-              variant="destructive"
               onClick={handleClearAllData}
             >
               Yes, delete all data

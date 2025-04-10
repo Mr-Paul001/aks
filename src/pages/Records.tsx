@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { format } from 'date-fns';
 import { useApp } from '@/context/AppContext';
@@ -58,7 +57,6 @@ const Records = () => {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [currentRecord, setCurrentRecord] = useState<AttendanceRecord | null>(null);
   
-  // Filter records
   const filteredRecords = attendanceRecords.filter((record) => {
     const employee = getEmployeeById(record.employeeId);
     
@@ -76,7 +74,6 @@ const Records = () => {
     return matchSearch && matchEmployee && matchStatus;
   });
   
-  // Sort records by date (newest first)
   const sortedRecords = [...filteredRecords].sort((a, b) => {
     return new Date(b.date).getTime() - new Date(a.date).getTime();
   });
@@ -223,7 +220,6 @@ const Records = () => {
         </Table>
       </div>
       
-      {/* Edit Record Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
@@ -243,7 +239,6 @@ const Records = () => {
         </DialogContent>
       </Dialog>
       
-      {/* Delete Confirmation Dialog */}
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -255,7 +250,6 @@ const Records = () => {
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction 
-              variant="destructive"
               onClick={handleDeleteRecord}
             >
               Delete
